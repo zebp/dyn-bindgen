@@ -1,0 +1,17 @@
+[package]
+name = "dyn-bindgen"
+version = "0.1.0"
+authors = ["vlakreeh <zeb@zebulon.dev>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.35"
+bindgen = "0.56.0"
+quote = "1.0.7"
+rustfmt = "0.10.0"
+
+[dependencies.syn]
+version = "1.0.53"
+features = ["full", "visit-mut"]
