@@ -13,6 +13,11 @@ pub fn generate_bindings_module(parsed: Parsed) -> Result<File> {
         items: Vec::new(),
     };
 
+    file.items.push(syn::parse_quote!(pub use glue::*;));
+
+    let glue_mod = crate::glue::generate_libloading_glue(&parsed);
+    file.items.push(glue_mod);
+
     parsed
         .functions
         .iter()
@@ -120,7 +125,7 @@ fn construct_release_function(args: Punctuated<Ident, Comma>, name: Ident, sig: 
         }),
         attrs: vec![cfg_not_debug_attr],
         block: syn::parse_quote! {
-            { (*#name)(#args) }
+            { #name.read()(#args) }
         },
         sig,
     })

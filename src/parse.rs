@@ -27,6 +27,12 @@ impl VisitMut for Parsed {
 
 pub struct BoundFunction(pub Signature);
 
+impl BoundFunction {
+    pub fn name(&self) -> String {
+        self.0.ident.to_string()
+    }
+}
+
 impl Into<TypeBareFn> for &BoundFunction {
     fn into(self) -> TypeBareFn {
         let Signature {

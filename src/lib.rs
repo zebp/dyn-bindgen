@@ -1,5 +1,6 @@
 use syn::export::ToTokens;
 
+mod glue;
 mod generator;
 mod parse;
 
@@ -29,7 +30,7 @@ mod tests {
 
     #[test]
     fn test_dyn_bindings() {
-        let builder = bindgen::builder().header_contents("add.h", "int add(int a, int b);");
+        let builder = bindgen::builder().header_contents("add.h", "int add(int a, int b);int sub(int a, int b);");
         let code = generate(builder).unwrap();
 
         println!("{}", code);
