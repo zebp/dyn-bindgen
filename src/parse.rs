@@ -1,12 +1,14 @@
 use anyhow::Result;
-use syn::{
-    export::Span, visit_mut::VisitMut, Abi, BareFnArg, File, FnArg, ForeignItemFn, LitStr,
-    Signature, Token, TypeBareFn,
-};
+use syn::{export::*, visit_mut::VisitMut, *};
 
 #[derive(Default)]
 pub struct Parsed {
     pub functions: Vec<BoundFunction>,
+    pub const_items: Vec<ItemConst>,
+    // TODO: Figure out how it should handle static items.
+    // pub static_items: Vec<ForeignItemStatic>,
+    pub struct_items: Vec<ItemStruct>,
+    pub type_items: Vec<ItemType>,
 }
 
 pub fn parse(code: &str) -> Result<Parsed> {
@@ -22,6 +24,18 @@ impl VisitMut for Parsed {
     fn visit_foreign_item_fn_mut(&mut self, item_fn: &mut ForeignItemFn) {
         let sig = item_fn.sig.clone();
         self.functions.push(BoundFunction(sig));
+    }
+    
+    fn visit_item_const_mut(&mut self, i: &mut ItemConst) {
+        self.const_items.push(i.clone());
+    }
+    
+    fn visit_item_struct_mut(&mut self, i: &mut ItemStruct) {
+        self.struct_items.push(i.clone());
+    }
+
+    fn visit_item_type_mut(&mut self, i: &mut ItemType) {
+        self.type_items.push(i.clone());
     }
 }
 

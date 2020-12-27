@@ -1,30 +1,10 @@
-use anyhow::Result;
+// TODO: Clean this up
 use syn::{
-    export::Span, punctuated::Punctuated, token::Comma, Abi, File, FnArg, Ident, Item, ItemFn,
+    export::Span, punctuated::Punctuated, token::Comma, Abi, FnArg, Ident, Item, ItemFn,
     LitStr, Pat, Signature, Token, Type, TypeBareFn, VisPublic, Visibility,
 };
 
-use crate::parse::{BoundFunction, Parsed};
-
-pub fn generate_bindings_module(parsed: Parsed) -> Result<File> {
-    let mut file = File {
-        shebang: None,
-        attrs: Vec::new(),
-        items: Vec::new(),
-    };
-
-    file.items.push(syn::parse_quote!(pub use glue::*;));
-
-    let glue_mod = crate::glue::generate_libloading_glue(&parsed);
-    file.items.push(glue_mod);
-
-    parsed
-        .functions
-        .iter()
-        .for_each(|func| append_items(&mut file.items, func));
-
-    Ok(file)
-}
+use crate::parse::BoundFunction;
 
 pub fn append_items(module_items: &mut Vec<Item>, func: &BoundFunction) {
     append_type(module_items, func);
@@ -88,15 +68,16 @@ fn append_function(module_items: &mut Vec<Item>, func: &BoundFunction) {
         args.clone(),
         name.clone(),
         sig.clone(),
+        func.name()
     ));
     module_items.push(construct_release_function(args.clone(), name.clone(), sig));
 }
 
-fn construct_debug_function(args: Punctuated<Ident, Comma>, name: Ident, sig: Signature) -> Item {
+fn construct_debug_function(args: Punctuated<Ident, Comma>, name: Ident, sig: Signature, regular_name: String) -> Item {
     let cfg_debug_attr = syn::parse_quote! { #[cfg(debug_assertions)] };
     let panic_str = format!(
         "attempt to call '{}' but it has not been loaded from it's library.",
-        name
+        regular_name
     );
 
     Item::Fn(ItemFn {
@@ -109,7 +90,7 @@ fn construct_debug_function(args: Punctuated<Ident, Comma>, name: Ident, sig: Si
                 if #name.is_null() {
                     panic!(#panic_str);
                 } else {
-                    (*#name)(#args)
+                    #name.read()(#args)
                 }
             }
         },
