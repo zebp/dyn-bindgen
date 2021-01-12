@@ -1,4 +1,4 @@
-use syn::export::ToTokens;
+use quote::ToTokens;
 
 mod glue;
 mod generator;
@@ -13,15 +13,16 @@ pub fn generate(builder: bindgen::Builder) -> anyhow::Result<String> {
 
     let code = generated.to_token_stream().to_string();
 
-    let input = rustfmt::Input::Text(code);
-    let config = rustfmt::config::Config::default();
-    let mut buffer = Vec::new();
+    // TODO: rustfmt sometimes crashes with an underflow, so for now we won't format the output
+    // let input = rustfmt::Input::Text(code);
+    // let config = rustfmt::config::Config::default();
+    // let mut buffer = Vec::new();
 
-    let (_, file_map, _) =
-        rustfmt::format_input(input, &config, Some(&mut buffer)).map_err(|(e, _)| e)?;
-    let (_, formatted) = &file_map[0];
+    // let (_, file_map, _) =
+    //     rustfmt::format_input(input, &config, Some(&mut buffer)).map_err(|(e, _)| e)?;
+    // let (_, formatted) = &file_map[0];
 
-    Ok(formatted.to_string())
+    Ok(code)
 }
 
 #[cfg(test)]

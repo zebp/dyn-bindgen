@@ -1,4 +1,5 @@
-use syn::{Block, Ident, Item, ItemMod, export::Span, token::Brace};
+use proc_macro2::Span;
+use syn::{Block, Ident, Item, ItemMod, token::Brace};
 
 use crate::parse::{BoundFunction, Parsed};
 
@@ -13,10 +14,18 @@ pub fn generate_libloading_glue(parsed: &Parsed) -> Item {
             let name_fn = Ident::new(&name_fn, Span::call_site());
 
             syn::parse_quote!({
-                let sym = lib.get::<super::#name_fn>(#name.as_bytes()).unwrap();
-                let sym = Box::new(sym);
-                let sym = Box::leak(sym);
-                super::#name_ptr = (*sym).deref() as *const super::#name_fn;
+                match lib.get::<super::#name_fn>(#name.as_bytes()) {
+                    Ok(sym) => {
+                        let sym = Box::new(sym);
+                        let sym = Box::leak(sym);
+                        super::#name_ptr = (*sym).deref() as *const super::#name_fn;
+                    },
+                    Err(e) => {
+                        // TODO: Figure out an elegant way to display this,
+                        // maybe only print it in debug mode?
+                        // eprintln!("Error loading {}: {:#?}", #name, e);
+                    }
+                }
             })
         })
         .collect::<Vec<syn::Stmt>>();

@@ -1,6 +1,8 @@
 // TODO: Clean this up
+
+use proc_macro2::Span;
 use syn::{
-    export::Span, punctuated::Punctuated, token::Comma, Abi, FnArg, Ident, Item, ItemFn,
+    punctuated::Punctuated, token::Comma, Abi, FnArg, Ident, Item, ItemFn,
     LitStr, Pat, Signature, Token, Type, TypeBareFn, VisPublic, Visibility,
 };
 

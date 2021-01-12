@@ -1,5 +1,6 @@
 use anyhow::Result;
-use syn::{export::*, visit_mut::VisitMut, *};
+use proc_macro2::Span;
+use syn::{visit_mut::VisitMut, *};
 
 #[derive(Default)]
 pub struct Parsed {
