@@ -74,13 +74,18 @@ impl LoadingStrategy {
 
         Ok(loader)
     }
+
+    /// Returns `true` if the loading_strategy is [`ImplicitlyLoadedBundle`].
+    pub fn is_implicitly_loaded_bundle(&self) -> bool {
+        matches!(self, Self::ImplicitlyLoadedBundle(..))
+    }
 }
 
 fn manual_load_function(item_loader_block: Block) -> Item {
     syn::parse_quote!(
         /// Loads the provided library into the generate functions.
         /// This function will panic if the library cannot be loaded.
-        pub fn load<P: AsRef<std::path::Path>>(library: P) {
+        pub unsafe fn load<P: AsRef<std::path::Path>>(library: P) {
             use std::ops::Deref;
 
             let lib = libloading::Library::new(library.as_ref())
@@ -96,7 +101,7 @@ fn manual_load_from_bundle_function(item_loader_block: Block, bundle_constant: I
     let bundle_writer_fn = bundle_writer_function(bundle_constant);
 
     syn::parse_quote!(
-        fn load_bundle() {
+        pub unsafe fn load_bundle() {
             use std::ops::Deref;
 
             #bundle_writer_fn
@@ -128,12 +133,12 @@ fn implicit_load_from_bundle_ctor(item_loader_block: Block, bundle_constant: Ite
             link_section = "__DATA,__mod_init_func"
         )]
         #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
-        static IMPLICIT_DYN_BINDGEN_LOADER: extern "C" fn() = {
+        static IMPLICIT_DYN_BINDGEN_LOADER: unsafe extern "C" fn() = {
             #[cfg_attr(
                 any(target_os = "linux", target_os = "android"),
                 link_section = ".text.startup"
             )]
-            extern "C" fn loader() {
+            unsafe extern "C" fn loader() {
                 use std::ops::Deref;
 
                 #bundle_writer_fn

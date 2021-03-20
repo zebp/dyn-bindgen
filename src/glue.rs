@@ -1,18 +1,23 @@
 use proc_macro2::Span;
-use syn::{token::Brace, Block, Ident, Item, ItemMod};
+use syn::{token::Brace, Block, Ident, Item};
 
-use crate::{bundle::LoadingStrategy, parse::{BoundFunction, Parsed}};
+use crate::{
+    bundle::LoadingStrategy,
+    parse::{BoundFunction, Parsed},
+};
 
 pub fn generate_libloading_glue(loading_strategy: LoadingStrategy, parsed: &Parsed) -> Item {
     let item_loader_block = generate_function_loaders_block(parsed);
 
-    let loader = loading_strategy.generate_loader_function(item_loader_block).unwrap();
+    let loader = loading_strategy
+        .generate_loader_function(item_loader_block)
+        .unwrap();
 
-    let module_item: ItemMod = syn::parse_quote!(mod glue {
-        #loader
-    });
-
-    Item::Mod(module_item)
+    if loading_strategy.is_implicitly_loaded_bundle() {
+        loader
+    } else {
+        syn::parse_quote!(mod glue { #loader })
+    }
 }
 
 fn generate_function_loaders_block(parsed: &Parsed) -> Block {
@@ -28,13 +33,13 @@ fn generate_function_loaders_block(parsed: &Parsed) -> Block {
             let name_fn = Ident::new(&name_fn, Span::call_site());
 
             syn::parse_quote!({
-                match lib.get::<super::#name_fn>(#name.as_bytes()) {
+                match lib.get::<crate::#name_fn>(#name.as_bytes()) {
                     Ok(sym) => {
                         let sym = Box::new(sym);
                         let sym = Box::leak(sym);
-                        super::#name_ptr = (*sym).deref() as *const super::#name_fn;
+                        crate::#name_ptr = (*sym).deref() as *const crate::#name_fn;
                     },
-                    Err(e) => {
+                    Err(_e) => {
                         // TODO: Figure out an elegant way to display this,
                         // maybe only print it in debug mode?
                         // eprintln!("Error loading {}: {:#?}", #name, e);

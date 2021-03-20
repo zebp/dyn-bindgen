@@ -13,12 +13,14 @@ pub fn generate_bindings_module(loading_strategy: LoadingStrategy, parsed: Parse
         items: Vec::new(),
     };
 
-    file.items.push(syn::parse_quote!(
-        pub use glue::*;
-    ));
+    if !loading_strategy.is_implicitly_loaded_bundle() {
+        file.items.push(syn::parse_quote!(
+            pub use glue::*;
+        ));
+    }
 
-    let glue_mod = crate::glue::generate_libloading_glue(loading_strategy, &parsed);
-    file.items.push(glue_mod);
+    let glue_item = crate::glue::generate_libloading_glue(loading_strategy, &parsed);
+    file.items.push(glue_item);
 
     let Parsed {
         functions,
