@@ -48,6 +48,7 @@ impl Bundle {
     }
 }
 
+/// How the dynamic library is loaded at runtime.
 #[derive(Debug, Clone)]
 pub enum LoadingStrategy {
     /// The user must manually call the generated `load` function with a path to the correct dynamic library
@@ -79,7 +80,7 @@ impl LoadingStrategy {
         Ok(loader)
     }
 
-    /// Returns `true` if the loading_strategy is [`ImplicitlyLoadedBundle`].
+    /// Returns `true` if the loading_strategy is [`Self::ImplicitlyLoadedBundle`].
     pub fn is_implicitly_loaded_bundle(&self) -> bool {
         matches!(self, Self::ImplicitlyLoadedBundle(..))
     }

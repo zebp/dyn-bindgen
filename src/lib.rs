@@ -1,3 +1,4 @@
+//! Generate Rust bindings for dynamic library from C/C++ headers.
 
 mod bundle;
 mod generator;
@@ -8,11 +9,16 @@ use quote::ToTokens;
 
 pub use crate::bundle::*;
 
+#[derive(Debug, Clone)]
 pub struct Config {
+    /// How the dyanmic library should be loaded at runtime.
     pub loading_strategy: LoadingStrategy,
+    /// If the rust formatter should be used on the generated code, this has no effect on runtime but
+    /// might be useful if you need to debug
     pub use_rust_fmt: bool,
 }
 
+/// Generates a rust file with bindings to a dynamic library.
 pub fn generate(builder: bindgen::Builder, config: Config) -> anyhow::Result<String> {
     let code = builder.generate().unwrap();
     let code = code.to_string();
