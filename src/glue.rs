@@ -1,12 +1,12 @@
 use proc_macro2::Span;
 use syn::{token::Brace, Block, Ident, Item, ItemMod};
 
-use crate::{bundle::BundleStrategy, parse::{BoundFunction, Parsed}};
+use crate::{bundle::LoadingStrategy, parse::{BoundFunction, Parsed}};
 
-pub fn generate_libloading_glue(bundle_strategy: BundleStrategy, parsed: &Parsed) -> Item {
+pub fn generate_libloading_glue(loading_strategy: LoadingStrategy, parsed: &Parsed) -> Item {
     let item_loader_block = generate_function_loaders_block(parsed);
 
-    let loader = bundle_strategy.generate_loader_function(item_loader_block).unwrap();
+    let loader = loading_strategy.generate_loader_function(item_loader_block).unwrap();
 
     let module_item: ItemMod = syn::parse_quote!(mod glue {
         #loader

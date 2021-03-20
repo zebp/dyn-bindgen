@@ -45,7 +45,7 @@ impl Bundle {
 }
 
 #[derive(Debug, Clone)]
-pub enum BundleStrategy {
+pub enum LoadingStrategy {
     /// The user must manually call the generated `load` function with a path to the correct dynamic library
     /// on disk. No functions are automatically loading and will panic if called.
     Manual,
@@ -56,7 +56,7 @@ pub enum BundleStrategy {
     ImplicitlyLoadedBundle(Bundle),
 }
 
-impl BundleStrategy {
+impl LoadingStrategy {
     pub(crate) fn generate_loader_function(
         &self,
         item_loader_block: Block,

@@ -4,9 +4,9 @@ use anyhow::Result;
 use syn::File;
 
 use crate::parse::Parsed;
-use crate::bundle::BundleStrategy;
+use crate::bundle::LoadingStrategy;
 
-pub fn generate_bindings_module(bundle_strategy: BundleStrategy, parsed: Parsed) -> Result<File> {
+pub fn generate_bindings_module(loading_strategy: LoadingStrategy, parsed: Parsed) -> Result<File> {
     let mut file = File {
         shebang: None,
         attrs: Vec::new(),
@@ -17,7 +17,7 @@ pub fn generate_bindings_module(bundle_strategy: BundleStrategy, parsed: Parsed)
         pub use glue::*;
     ));
 
-    let glue_mod = crate::glue::generate_libloading_glue(bundle_strategy, &parsed);
+    let glue_mod = crate::glue::generate_libloading_glue(loading_strategy, &parsed);
     file.items.push(glue_mod);
 
     let Parsed {

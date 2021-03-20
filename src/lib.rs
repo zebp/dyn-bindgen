@@ -9,7 +9,7 @@ use quote::ToTokens;
 pub use crate::bundle::*;
 
 pub struct Config {
-    pub bundle_strategy: BundleStrategy,
+    pub loading_strategy: LoadingStrategy,
     pub use_rust_fmt: bool,
 }
 
@@ -18,7 +18,7 @@ pub fn generate(builder: bindgen::Builder, config: Config) -> anyhow::Result<Str
     let code = code.to_string();
 
     let parsed = parse::parse(&code)?;
-    let generated = generator::generate_bindings_module(config.bundle_strategy, parsed)?;
+    let generated = generator::generate_bindings_module(config.loading_strategy, parsed)?;
 
     let code = generated.to_token_stream().to_string();
 
@@ -50,7 +50,7 @@ mod tests {
             .header_contents("add.h", "int add(int a, int b);int sub(int a, int b);");
         let bundle = Bundle::RawBytes(vec![0u8; 32]);
         let config = Config {
-            bundle_strategy: BundleStrategy::ImplicitlyLoadedBundle(bundle),
+            loading_strategy: LoadingStrategy::ImplicitlyLoadedBundle(bundle),
             use_rust_fmt: true,
         };
         let code = generate(builder, config).unwrap();
