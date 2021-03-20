@@ -16,11 +16,14 @@ pub enum Bundle {
 impl Bundle {
     /// Creates a constant that contains the bytes of the dynamic library that
     /// should be loaded.
-    fn create_bundle_constant(&self) -> std::io::Result<ItemConst> {
+    fn create_bundle_constant(&self) -> std::io::Result<(ItemConst, String)> {
         let bytes = match self {
             Self::File(path) => std::fs::read(&path)?,
             Self::RawBytes(bytes) => bytes.clone(),
         };
+
+        let hash = md5::compute(&bytes);
+        let bundle_hash = hex::encode(*hash);
 
         let array_elements = bytes
             .into_iter()
@@ -40,7 +43,8 @@ impl Bundle {
             attrs: Vec::new(),
         };
 
-        Ok(syn::parse_quote!(const BUNDLE_BYTES: &[u8] = &#array_expression;))
+        let bundle_constant = syn::parse_quote!(const BUNDLE_BYTES: &[u8] = &#array_expression;);
+        Ok((bundle_constant, bundle_hash))
     }
 }
 
@@ -97,8 +101,8 @@ fn manual_load_function(item_loader_block: Block) -> Item {
     )
 }
 
-fn manual_load_from_bundle_function(item_loader_block: Block, bundle_constant: ItemConst) -> Item {
-    let bundle_writer_fn = bundle_writer_function(bundle_constant);
+fn manual_load_from_bundle_function(item_loader_block: Block, bundle_items: (ItemConst, String)) -> Item {
+    let bundle_writer_fn = bundle_writer_function(bundle_items);
 
     syn::parse_quote!(
         pub unsafe fn load_bundle() {
@@ -116,8 +120,8 @@ fn manual_load_from_bundle_function(item_loader_block: Block, bundle_constant: I
     )
 }
 
-fn implicit_load_from_bundle_ctor(item_loader_block: Block, bundle_constant: ItemConst) -> Item {
-    let bundle_writer_fn = bundle_writer_function(bundle_constant);
+fn implicit_load_from_bundle_ctor(item_loader_block: Block, bundle_items: (ItemConst, String)) -> Item {
+    let bundle_writer_fn = bundle_writer_function(bundle_items);
 
     syn::parse_quote!(
         #[used]
@@ -156,13 +160,15 @@ fn implicit_load_from_bundle_ctor(item_loader_block: Block, bundle_constant: Ite
     )
 }
 
-fn bundle_writer_function(bundle_constant: ItemConst) -> ItemFn {
+fn bundle_writer_function(bundle_items: (ItemConst, String)) -> ItemFn {
+    let (bundle_constant, bundle_hash) = bundle_items;
+
     syn::parse_quote!(
         fn write_bundle_to_temp() -> std::path::PathBuf {
             #bundle_constant
 
             let mut path = std::env::temp_dir();
-            path.push("HASH.module"); // TODO: Actually use the hash of the bundle
+            path.push(format!("bundle.{}.module", #bundle_hash)); // TODO: Actually use the hash of the bundle
 
             std::fs::write(&path, BUNDLE_BYTES).expect("could not write dynamic library bundle");
 
