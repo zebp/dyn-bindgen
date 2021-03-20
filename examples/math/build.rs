@@ -10,8 +10,15 @@ fn main() {
         .expect("library file name was invalid");
     let library_path = &format!("target/{}", library_filename);
 
+    let mut compiler = cc::Build::new();
+
+    // I couldn't get this working on windows without this, so this example requires clang now
+    if cfg!(windows) {
+        compiler.compiler("C:\\Program Files\\LLVM\\bin\\clang.exe");
+    }
+
     // CC doesn't allow us to generate a .so/.dll/.dylib so we do it outselves.
-    let mut command = cc::Build::new()
+    let mut command = compiler
         .file("src/math.c")
         .shared_flag(true)
         .get_compiler()
