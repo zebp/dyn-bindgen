@@ -5,6 +5,8 @@ mod generator;
 mod glue;
 mod parse;
 
+use std::process::Command;
+
 use quote::ToTokens;
 
 pub use crate::bundle::*;
@@ -29,17 +31,19 @@ pub fn generate(builder: bindgen::Builder, config: Config) -> anyhow::Result<Str
     let code = generated.to_token_stream().to_string();
 
     if config.use_rust_fmt {
-        // TODO: rustfmt sometimes crashes with an underflow, so for now we won't format the output
-        // maybe switch to creating a temp file and running rustfmt as a command on that?
-        let input = rustfmt::Input::Text(code);
-        let config = rustfmt::config::Config::default();
-        let mut buffer = Vec::new();
+        // This is a hack, but the `rustfmt` crate is deprecated and it's replacement requires nightly
+        let file = std::env::temp_dir().join("unformatted.bindings.rs");
+        std::fs::write(&file, code)?;
 
-        let (_, file_map, _) =
-            rustfmt::format_input(input, &config, Some(&mut buffer)).map_err(|(e, _)| e)?;
-        let (_, formatted) = &file_map[0];
+        let _ = Command::new("rustfmt")
+            .arg(file.as_os_str())
+            .output()
+            .expect("unable to run rustfmt on the bindings");
 
-        Ok(formatted.to_string())
+        let code = std::fs::read_to_string(&file)?;
+        std::fs::remove_file(file)?;
+
+        Ok(code)
     } else {
         Ok(code)
     }
