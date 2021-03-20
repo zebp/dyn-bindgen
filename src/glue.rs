@@ -1,10 +1,24 @@
 use proc_macro2::Span;
-use syn::{Block, Ident, Item, ItemMod, token::Brace};
+use syn::{token::Brace, Block, Ident, Item, ItemMod};
 
-use crate::parse::{BoundFunction, Parsed};
+use crate::{bundle::BundleStrategy, parse::{BoundFunction, Parsed}};
 
-pub fn generate_libloading_glue(parsed: &Parsed) -> Item {
-    let calls = parsed.functions.iter()
+pub fn generate_libloading_glue(bundle_strategy: BundleStrategy, parsed: &Parsed) -> Item {
+    let item_loader_block = generate_function_loaders_block(parsed);
+
+    let loader = bundle_strategy.generate_loader_function(item_loader_block).unwrap();
+
+    let module_item: ItemMod = syn::parse_quote!(mod glue {
+        #loader
+    });
+
+    Item::Mod(module_item)
+}
+
+fn generate_function_loaders_block(parsed: &Parsed) -> Block {
+    let calls = parsed
+        .functions
+        .iter()
         .map(BoundFunction::name)
         .map(|name| {
             let name_ptr = format!("{}_ptr", name);
@@ -30,23 +44,8 @@ pub fn generate_libloading_glue(parsed: &Parsed) -> Item {
         })
         .collect::<Vec<syn::Stmt>>();
 
-    let block = Block {
+    Block {
         brace_token: Brace::default(),
-        stmts: calls
-    };
-
-    let module_item: ItemMod = syn::parse_quote!(mod glue {
-        use std::path::Path;
-        use std::ops::Deref;
-
-        pub fn load<P: AsRef<Path>>(library: P) {
-            
-            let lib = libloading::Library::new(library.as_ref()).unwrap();
-            let lib = Box::leak(Box::new(lib)); // Leak the library so it isn't dropped
-
-            unsafe #block
-        }
-    });
-
-    Item::Mod(module_item)
+        stmts: calls,
+    }
 }
